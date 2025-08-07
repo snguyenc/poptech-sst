@@ -1,0 +1,26 @@
+cp com.audiocapture.stt.json ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/
+
+# Tạo script executable
+chmod +x docker_build.sh
+
+# Build tất cả platforms
+./docker_build.sh all
+
+# Hoặc build riêng lẻ
+./docker_build.sh windows    # Chỉ Windows
+./docker_build.sh linux      # Chỉ Linux  
+./docker_build.sh extension  # Chỉ Chrome extension
+
+docker compose
+
+# Tạo thư mục output
+mkdir -p docker_builds/{windows,linux}
+
+# Build Windows
+docker-compose -f docker-compose.build.yml run --rm build-windows
+
+# Build Linux
+docker-compose -f docker-compose.build.yml run --rm build-linux
+
+# Package extension
+docker-compose -f docker-compose.build.yml run --rm package-extension

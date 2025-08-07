@@ -1,0 +1,7 @@
+build/
+dist/
+native_app.log
+audio_capture_extension.zip
+native_app.log
+websocket_app/__pycache__/auto_summary.cpython-310.pyc
+websocket_app/logs/app.log

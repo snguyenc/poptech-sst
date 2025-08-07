@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Capture Extension</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.ready { background-color: #e8f5e8; color: #2d5a2d; }
+        .status.recording { background-color: #fff3cd; color: #856404; }
+        .status.error { background-color: #f8d7da; color: #721c24; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .start-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .start-btn:hover { background-color: #218838; }
+        .start-btn:disabled { background-color: #6c757d; }
+        
+        .stop-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .stop-btn:hover { background-color: #c82333; }
+        .stop-btn:disabled { background-color: #6c757d; }
+        
+        .transcript-section {
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .transcript-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+        #transcriptArea, #summaryArea {
+            width: 100%;
+            height: 120px;
+            padding: 4px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: vertical;
+            background-color: white;
+            overflow-y: auto;
+        }
+        #transcriptArea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+        }
+        .transcript-controls {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .clear-btn, .copy-btn {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background-color: white;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-btn {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+        .clear-btn:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        .copy-btn {
+            color: #007bff;
+            border-color: #007bff;
+        }
+        .copy-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .config {
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            font-size: 12px;
+        }
+        .config label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .config input, .config select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+        .device-selector {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .device-selector select {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .load-btn {
+            padding: 5px 8px;
+            font-size: 10px;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+        .load-btn:hover {
+            background-color: #0069d9;
+        }
+        /* ======================================== */
+    /*          CUSTOM SELECT BOX STYLES        */
+    /* ======================================== */
+
+    /* Vỏ bọc cho mỗi select box */
+    .select-group {
+        position: relative; /* Cần thiết để định vị icon mũi tên */
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+    }
+
+    /* Style chính cho thẻ <select> đã được tùy chỉnh */
+    select {
+        /* Loại bỏ giao diện mặc định của trình duyệt */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        
+        /* Bỏ viền và mũi tên mặc định trên IE */
+        &::-ms-expand {
+            display: none;
+        }
+
+        /* Kích thước và khoảng cách */
+        width: 100%;
+        padding: 6px 20px 6px 12px; /* Thêm padding bên phải để chừa chỗ cho icon */
+        font-size: 14px;
+        line-height: 1.5;
+        
+        /* Màu sắc và viền */
+        background-color: #64646b; /* Màu nền tối hơn một chút */
+        color: #f2f2f7;
+        border: 1px solid #4a4a4c;
+        border-radius: 6px;
+        
+        /* Hiệu ứng chuyển động */
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        
+        /* Con trỏ */
+        cursor: pointer;
+    }
+
+    /* Hiệu ứng khi focus (click vào hoặc dùng phím Tab) */
+    select:focus {
+        outline: none;
+        border-color: #0a84ff; /* Màu xanh dương đặc trưng của Apple */
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
+    }
+
+    /* Hiệu ứng khi hover */
+    select:hover {
+        border-color: #5a5a5c;
+    }
+
+    /* Style khi select bị vô hiệu hóa */
+    select:disabled {
+        background-color: #3a3a3c;
+        color: #8e8e93;
+        cursor: not-allowed;
+    }
+
+    /* Tạo icon mũi tên tùy chỉnh */
+    .select-group::after {
+        content: '▼'; /* Ký tự mũi tên xuống, bạn có thể thay bằng SVG */
+        font-size: 10px;
+        color: #8e8e93;
+        
+        position: absolute;
+        right: 12px;
+        top: 10px; /* Điều chỉnh vị trí dọc cho phù hợp */
+        
+        pointer-events: none; /* Quan trọng: để click có thể "xuyên qua" icon và đến thẻ select */
+        transition: color 0.2s ease-in-out;
+    }
+
+    /* Thay đổi màu mũi tên khi select box được hover */
+    .select-group:hover::after {
+        color: #f2f2f7;
+    }
+    </style>
+</head>
+<body>
+    <div id="status" class="status ready">
+        Trạng thái: Sẵn sàng
+    </div>
+    
+    <div class="controls">
+        <button id="startBtn" class="start-btn">Bắt đầu</button>
+        <button id="stopBtn" class="stop-btn" disabled>Dừng</button>
+    </div>
+
+     <!-- ================== PHẦN MỚI THÊM VÀO ================== -->
+     <div class="select-group">
+        <select id="languageSelect" aria-label="Language">
+            <option value="vi" selected>Vietnamese</option>
+            <option value="en">English</option>
+            <option value="th">Thai</option>
+        </select>
+    </div>
+    
+    <div class="transcript-section">
+        <div class="transcript-header">
+            <label for="transcriptArea">Transcript</label>
+            <button id="copyTranscriptBtn" class="utility-btn" style="display: none;">Copy</button>
+        </div>
+        <textarea id="transcriptArea" readonly placeholder="Transcript sẽ xuất hiện ở đây..."></textarea>
+    </div>
+    
+    <!-- ================== PHẦN MỚI THÊM VÀO ================== -->
+    <div class="transcript-section summary-section">
+        <div class="transcript-header">
+            <label for="summaryArea">AI Auto Summary</label>
+            <button id="copySummaryBtn" class="utility-btn" style="display: none;">Copy</button>
+        </div>
+        <textarea id="summaryArea" readonly placeholder="Bản tóm tắt sẽ xuất hiện ở đây..."></textarea>
+    </div>
+    <!-- ======================================================== -->
+
+    <button id="clearTranscriptBtn" class="utility-btn clear-btn">Clear All</button>
+    
+    <div class="config">
+        <label>Microphone Device:</label>
+        <div class="device-selector">
+            <select id="micDevice" aria-label="Microphone Device">
+            </select>
+        </div>
+        
+        <label>System Audio Device:</label>
+        <select id="systemDevice" aria-label="System Audio Device">
+        </select>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

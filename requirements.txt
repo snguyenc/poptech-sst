@@ -1,0 +1,5 @@
+# requirements.txt (ĐÚNG)
+pyaudio==0.2.11
+websockets==11.0.3
+numpy==1.24.3
+librosa==0.11.0

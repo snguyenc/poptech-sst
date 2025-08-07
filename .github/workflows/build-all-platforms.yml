@@ -1,0 +1,195 @@
+# .github/workflows/build-all-platforms.yml
+name: Build Audio Capture Extension - All Platforms
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            exe_suffix: .exe
+        
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    # Bước cài đặt các dependency của hệ điều hành
+    - name: Install System Dependencies
+      shell: bash  # <-- THÊM DÒNG NÀY VÀO
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          # Lệnh cho Ubuntu/Linux (nếu sau này bạn bật lại)
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          # Lệnh cho macOS
+          brew install portaudio
+        fi
+
+    - name: Install dependencies
+      shell: bash # Đảm bảo dùng bash để cú pháp if hoạt động
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        
+        # Cài đặt dependency dựa trên hệ điều hành
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo "Installing from requirements-windows.txt"
+          pip install -r requirements-windows.txt
+        else
+          # Dành cho macOS và Linux
+          # Lấy đường dẫn cài đặt của portaudio từ brew
+          PORTAUDIO_PATH=$(brew --prefix portaudio)
+          
+          # Xuất các biến môi trường để trình biên dịch có thể thấy portaudio
+          export CFLAGS="-I$PORTAUDIO_PATH/include"
+          export LDFLAGS="-L$PORTAUDIO_PATH/lib"
+          pip install -r requirements.txt
+        fi
+        
+    - name: Create dist directory
+      run: mkdir -p dist
+        
+    - name: Build websocket app  
+      run: |
+        pyinstaller --onefile --console --name audio_capture_websocket --distpath dist websocket_app/audio_capture_native.py
+        
+    - name: List build outputs (Debug)
+      shell: bash
+      run: |
+        echo "=== Build Output for ${{ matrix.platform }} ==="
+        ls -la dist/ || dir dist
+        
+    - name: Create Chrome extension package
+      shell: bash
+      run: |
+        if [ -d "extension" ]; then
+          echo "Found extension directory, creating zip archive..."
+
+          # Lựa chọn công cụ nén file dựa trên hệ điều hành
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            # Dùng PowerShell Compress-Archive trên Windows
+            # Lưu ý: Cần cd vào thư mục để cấu trúc file zip được đúng
+            cd extension
+            powershell -Command "Compress-Archive -Path * -DestinationPath ../dist/audio_capture_extension.zip -Force"
+            cd ..
+          else
+            # Dùng zip trên Linux và macOS
+            cd extension
+            zip -r ../dist/audio_capture_extension.zip . -x ".*" "*.DS_Store"
+            cd ..
+          fi
+          
+          echo "Chrome extension packaged into dist/audio_capture_extension.zip"
+        else
+          echo "Chrome extension directory not found, skipping..."
+        fi
+        
+    - name: Create installer (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        echo '@echo off' > dist/install_windows.bat
+        echo 'echo Installing Audio Capture Extension...' >> dist/install_windows.bat
+        echo 'mkdir "%PROGRAMFILES%\AudioCaptureExtension" 2>nul' >> dist/install_windows.bat
+        echo 'copy "audio_capture_websocket.exe" "%PROGRAMFILES%\AudioCaptureExtension\"' >> dist/install_windows.bat
+        echo 'echo ✅ Installation complete!' >> dist/install_windows.bat
+        echo 'echo Install Chrome extension from: audio_capture_extension.zip' >> dist/install_windows.bat
+        echo 'pause' >> dist/install_windows.bat
+        
+    - name: Create installer (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        cat > dist/install_linux.sh << 'EOF'
+        #!/bin/bash
+        echo "Installing Audio Capture Extension..."
+        sudo cp audio_capture_websocket /usr/local/bin/
+        sudo chmod +x /usr/local/bin/audio_capture_*
+        echo "✅ Installation complete!"
+        echo "Install Chrome extension from: audio_capture_extension.zip"
+        EOF
+        chmod +x dist/install_linux.sh
+        
+    - name: Create installer (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        cat > dist/install_macos.sh << 'EOF'
+        #!/bin/bash
+        echo "Installing Audio Capture Extension..."
+        sudo mkdir -p "/Applications/AudioCaptureExtension"
+        sudo cp audio_capture_websocket "/Applications/AudioCaptureExtension/"
+        sudo chmod +x "/Applications/AudioCaptureExtension/audio_capture_"*
+        echo "✅ Installation complete!"
+        echo "Install Chrome extension from: audio_capture_extension.zip"
+        EOF
+        chmod +x dist/install_macos.sh
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4  # <-- THAY ĐỔI Ở ĐÂY
+      with:
+        name: audio-capture-${{ matrix.platform }}
+        path: dist/
+        retention-days: 30
+
+  # Create release when tagged
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4  # <-- THAY ĐỔI Ở ĐÂY
+      
+    - name: Display structure of downloaded files
+      run: ls -R
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          audio-capture-windows/*
+          audio-capture-linux/*
+          audio-capture-macos/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Summary job
+  build-summary:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Build Summary
+      run: |
+        echo "🎉 Multi-platform build completed!"
+        echo "✅ Windows: ${{ needs.build.result }}"
+        echo "✅ Linux: ${{ needs.build.result }}"  
+        echo "✅ macOS: ${{ needs.build.result }}"
+        echo ""
+        echo "📁 Artifacts available for download:"
+        echo "  - audio-capture-windows (Windows .exe files + installer)"
+        echo "  - audio-capture-linux (Linux executables + installer)"
+        echo "  - audio-capture-macos (macOS executables + installer)"
+        echo ""
+        echo "🚀 Each artifact contains:"
+        echo "  - audio_capture_websocket executable"
+        echo "  - audio_capture_extension.zip (Chrome extension)"
+        echo "  - Platform-specific installer script"

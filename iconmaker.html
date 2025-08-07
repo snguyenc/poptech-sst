@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT Recording Icons - Export Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .icon-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .icon-preview:hover {
+            transform: translateY(-5px);
+        }
+        
+        .icon-preview h3 {
+            margin: 10px 0 5px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .icon-preview p {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0;
+        }
+        
+        .canvas-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
+        .canvas-item {
+            text-align: center;
+        }
+        
+        .canvas-item canvas {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .canvas-item canvas:hover {
+            border-color: #667eea;
+        }
+        
+        .canvas-item span {
+            display: block;
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .export-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 40px;
+        }
+        
+        .export-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .export-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .export-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .code-section {
+            margin-top: 30px;
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        
+        .code-section h3 {
+            color: #4fd1c7;
+            margin-top: 0;
+        }
+        
+        .code-section pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+        
+        .download-all-btn {
+            background: linear-gradient(135deg, #2ed573, #26d466) !important;
+            font-size: 1.2em !important;
+            padding: 20px 30px !important;
+            grid-column: 1 / -1;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 STT Recording Icons - Export Tool</h1>
+        
+        <div class="preview-grid" id="previewGrid">
+            <!-- Icons will be generated here -->
+        </div>
+        
+        <div class="export-section">
+            <h2 style="margin-top: 0; color: #333;">📦 Export Icons</h2>
+            <p style="color: #666; margin-bottom: 20px;">Chọn kích thước và tải xuống icons cho extension của bạn:</p>
+            
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportSize(16)">
+                    📱 Export 16×16px
+                    <span style="font-size: 0.9em; opacity: 0.8;">Toolbar Icons</span>
+                </button>
+                <button class="export-btn" onclick="exportSize(32)">
+                    🖥️ Export 32×32px
+                    <span style="font-size: 0.9em; opacity: 0.8;">Standard Icons</span>
+                </button>
+                <button class="export-btn" onclick="exportSize(48)">
+                    ⚙️ Export 48×48px
+                    <span style="font-size: 0.9em; opacity: 0.8;">Extension Manager</span>
+                </button>
+                <button class="export-btn" onclick="exportSize(128)">
+                    🏪 Export 128×128px
+                    <span style="font-size: 0.9em; opacity: 0.8;">Chrome Web Store</span>
+                </button>
+                <button class="export-btn download-all-btn" onclick="exportAllSizes()">
+                    🚀 Export Tất Cả Kích Thước
+                    <span style="font-size: 0.9em; opacity: 0.8;">24 Files (6 icons × 4 sizes)</span>
+                </button>
+            </div>
+            
+            <div id="status" class="status" style="display: none;"></div>
+        </div>
+        
+        <div class="code-section">
+            <h3>💻 Cách sử dụng trong Chrome Extension</h3>
+            <pre><code>// manifest.json
+{
+  "manifest_version": 3,
+  "name": "STT Extension",
+  "version": "1.0",
+  "icons": {
+    "16": "icons/mic-idle-16.png",
+    "32": "icons/mic-idle-32.png", 
+    "48": "icons/mic-idle-48.png",
+    "128": "icons/mic-idle-128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/mic-idle-16.png",
+      "32": "icons/mic-idle-32.png"
+    }
+  }
+}
+
+// background.js - Thay đổi icon theo trạng thái
+const iconStates = {
+  idle: 'mic-idle',
+  recording: 'mic-recording', 
+  processing: 'mic-processing',
+  success: 'mic-success',
+  error: 'mic-error',
+  muted: 'mic-muted'
+};
+
+function updateIcon(state) {
+  chrome.action.setIcon({
+    path: {
+      16: `icons/${iconStates[state]}-16.png`,
+      32: `icons/${iconStates[state]}-32.png`
+    }
+  });
+}</code></pre>
+        </div>
+    </div>
+    
+    <script>
+        const iconConfigs = [
+            {
+                name: 'mic-idle',
+                title: 'Microphone Idle',
+                description: 'Sẵn sàng ghi âm',
+                color: '#667eea',
+                type: 'microphone'
+            },
+            {
+                name: 'mic-recording', 
+                title: 'Recording Active',
+                description: 'Đang ghi âm',
+                color: '#ff4757',
+                type: 'recording'
+            },
+            {
+                name: 'mic-processing',
+                title: 'Processing',
+                description: 'Đang xử lý',
+                color: '#5352ed', 
+                type: 'processing'
+            },
+            {
+                name: 'mic-success',
+                title: 'Success',
+                description: 'Hoàn thành',
+                color: '#2ed573',
+                type: 'success'
+            },
+            {
+                name: 'mic-error',
+                title: 'Error', 
+                description: 'Lỗi xảy ra',
+                color: '#ff4757',
+                type: 'error'
+            },
+            {
+                name: 'mic-muted',
+                title: 'Muted',
+                description: 'Mic bị tắt',
+                color: '#747d8c',
+                type: 'muted'
+            }
+        ];
+        
+        function createIcon(config, size) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Background circle với gradient
+            const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            gradient.addColorStop(0, config.color);
+            gradient.addColorStop(1, adjustBrightness(config.color, -20));
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Shadow effect
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = size * 0.1;
+            ctx.shadowOffsetY = size * 0.05;
+            
+            // Icon content
+            ctx.fillStyle = 'white';
+            ctx.shadowColor = 'transparent';
+            
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const scale = size / 64; // Base scale factor
+            
+            switch (config.type) {
+                case 'microphone':
+                    drawMicrophone(ctx, centerX, centerY, scale);
+                    break;
+                case 'recording':
+                    drawRecordingDot(ctx, centerX, centerY, scale);
+                    break;
+                case 'processing':
+                    drawProcessingBars(ctx, centerX, centerY, scale);
+                    break;
+                case 'success':
+                    drawCheckmark(ctx, centerX, centerY, scale);
+                    break;
+                case 'error':
+                    drawX(ctx, centerX, centerY, scale);
+                    break;
+                case 'muted':
+                    drawMutedMic(ctx, centerX, centerY, scale);
+                    break;
+            }
+            
+            return canvas;
+        }
+        
+        function drawMicrophone(ctx, x, y, scale) {
+            // Microphone body
+            ctx.beginPath();
+            ctx.roundRect(x - 8*scale, y - 12*scale, 16*scale, 20*scale, 8*scale);
+            ctx.fill();
+            
+            // Microphone stand
+            ctx.fillRect(x - 1*scale, y + 8*scale, 2*scale, 8*scale);
+            ctx.fillRect(x - 8*scale, y + 16*scale, 16*scale, 2*scale);
+            
+            // Sound waves
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2*scale;
+            ctx.beginPath();
+            ctx.arc(x, y, 20*scale, -Math.PI/3, Math.PI/3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, 26*scale, -Math.PI/4, Math.PI/4);
+            ctx.stroke();
+        }
+        
+        function drawRecordingDot(ctx, x, y, scale) {
+            ctx.beginPath();
+            ctx.arc(x, y, 12*scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(x - 4*scale, y - 4*scale, 6*scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        function drawProcessingBars(ctx, x, y, scale) {
+            const barWidth = 4*scale;
+            const barGap = 2*scale;
+            const numBars = 5;
+            const totalWidth = numBars * barWidth + (numBars-1) * barGap;
+            const startX = x - totalWidth/2;
+            
+            const heights = [12, 20, 8, 24, 16];
+            
+            for (let i = 0; i < numBars; i++) {
+                const barHeight = heights[i] * scale;
+                const barX = startX + i * (barWidth + barGap);
+                const barY = y - barHeight/2;
+                
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+            }
+        }
+        
+        function drawCheckmark(ctx, x, y, scale) {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4*scale;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(x - 8*scale, y);
+            ctx.lineTo(x - 2*scale, y + 6*scale);
+            ctx.lineTo(x + 8*scale, y - 6*scale);
+            ctx.stroke();
+        }
+        
+        function drawX(ctx, x, y, scale) {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4*scale;
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(x - 8*scale, y - 8*scale);
+            ctx.lineTo(x + 8*scale, y + 8*scale);
+            ctx.moveTo(x + 8*scale, y - 8*scale);
+            ctx.lineTo(x - 8*scale, y + 8*scale);
+            ctx.stroke();
+        }
+        
+        function drawMutedMic(ctx, x, y, scale) {
+            // Microphone body (faded)
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.roundRect(x - 8*scale, y - 12*scale, 16*scale, 20*scale, 8*scale);
+            ctx.fill();
+            
+            ctx.fillRect(x - 1*scale, y + 8*scale, 2*scale, 8*scale);
+            ctx.fillRect(x - 8*scale, y + 16*scale, 16*scale, 2*scale);
+            
+            // Diagonal line (slash)
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3*scale;
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(x - 15*scale, y - 15*scale);
+            ctx.lineTo(x + 15*scale, y + 15*scale);
+            ctx.stroke();
+        }
+        
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+        
+        function initializePreview() {
+            const previewGrid = document.getElementById('previewGrid');
+            
+            iconConfigs.forEach(config => {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'icon-preview';
+                
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'canvas-container';
+                
+                // Tạo preview với các kích thước khác nhau
+                [16, 32, 48, 64].forEach(size => {
+                    const canvasItem = document.createElement('div');
+                    canvasItem.className = 'canvas-item';
+                    
+                    const canvas = createIcon(config, size);
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+                    
+                    const label = document.createElement('span');
+                    label.textContent = `${size}px`;
+                    
+                    canvasItem.appendChild(canvas);
+                    canvasItem.appendChild(label);
+                    canvasContainer.appendChild(canvasItem);
+                });
+                
+                const title = document.createElement('h3');
+                title.textContent = config.title;
+                
+                const description = document.createElement('p');
+                description.textContent = config.description;
+                
+                previewDiv.appendChild(canvasContainer);
+                previewDiv.appendChild(title);
+                previewDiv.appendChild(description);
+                previewGrid.appendChild(previewDiv);
+            });
+        }
+        
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        async function exportSize(size) {
+            const button = event.target;
+            const originalHTML = button.innerHTML;
+            
+            button.innerHTML = `<span class="spinner">⏳</span> Đang tạo ${size}px...`;
+            button.disabled = true;
+            
+            try {
+                let downloadCount = 0;
+                
+                for (const config of iconConfigs) {
+                    const canvas = createIcon(config, size);
+                    
+                    await new Promise((resolve) => {
+                        canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${config.name}-${size}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            downloadCount++;
+                            resolve();
+                        }, 'image/png', 1.0);
+                    });
+                    
+                    // Delay nhỏ giữa các download
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                showStatus(`✅ Đã xuất thành công ${downloadCount} icons kích thước ${size}×${size}px!`);
+                
+            } catch (error) {
+                showStatus(`❌ Lỗi khi xuất icons: ${error.message}`, 'error');
+            } finally {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        }
+        
+        async function exportAllSizes() {
+            const button = event.target;
+            const originalHTML = button.innerHTML;
+            
+            button.innerHTML = `<span class="spinner">⏳</span> Đang xuất tất cả...`;
+            button.disabled = true;
+            
+            try {
+                const sizes = [16, 32, 48, 128];
+                let totalFiles = 0;
+                
+                for (const size of sizes) {
+                    for (const config of iconConfigs) {
+                        const canvas = createIcon(config, size);
+                        
+                        await new Promise((resolve) => {
+                            canvas.toBlob((blob) => {
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${config.name}-${size}.png`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                totalFiles++;
+                                resolve();
+                            }, 'image/png', 1.0);
+                        });
+                        
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                    }
+                }
+                
+                showStatus(`🎉 Đã xuất hoàn tất ${totalFiles} files! Bộ icon STT đã sẵn sàng cho extension của bạn.`);
+                
+            } catch (error) {
+                showStatus(`❌ Lỗi khi xuất tất cả icons: ${error.message}`, 'error');
+            } finally {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        }
+        
+        // Khởi tạo preview khi trang load
+        document.addEventListener('DOMContentLoaded', initializePreview);
+    </script>
+</body>
+</html>
