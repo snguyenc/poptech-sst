@@ -186,7 +186,7 @@ class AudioCaptureNative:
                     interval=interval,
                     summary_callback=self.send_to_extension,
                     loop=self.loop,
-                    min_summary_words=min_summary_words
+                    min_summary_words=min_summary_words,
                 )
                 log.info("AutoSummary service initialized.")
             else:
@@ -767,6 +767,7 @@ class AudioCaptureNative:
             return
 
         self.config.update(config)
+        self.auto_summary.update_language(config.get('language', 'vi'))
 
         if not await self.connect_stt_websocket(self.config['serverUrl']):
             await self.send_to_extension({"status": "error", "message": "Failed to connect to STT WebSocket."})

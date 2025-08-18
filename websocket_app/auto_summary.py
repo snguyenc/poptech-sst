@@ -28,6 +28,19 @@ class AutoSummary:
         self.summary_callback = summary_callback
         self.prevSummaryText = ""
         self.loop = loop
+        self.language = "Vietnamese"
+
+    def update_language(self, language: str):
+        """Updates the language of the AutoSummary instance."""
+        if language == "vi":
+            self.language = "Vietnamese"
+        elif language == "en":
+            self.language = "English"
+        elif language == "th":
+            self.language = "Thailand"    
+        else:
+            log.warning(f"Invalid language: {language}. Using default language: en")
+            self.language = "Vietnamese"    
 
     def add_transcript(self, text: str):
         """Adds a piece of transcript to the buffer."""
@@ -70,7 +83,8 @@ class AutoSummary:
             payload = {
                 "text": transcript_to_send,
                 "prevSummaryText": self.prevSummaryText,
-                "is_final": is_final
+                "is_final": is_final,
+                "language": self.language
             }
             response = requests.post(self.n8n_webhook_url, json=payload, timeout=15)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
